@@ -30,7 +30,7 @@ local kindtbl = {
 }
 
 local options = {
-    filetypes = { "r", "rmd", "quarto", "rnoweb", "rhelp" },
+    filetypes = { "r", "rmd", "quarto", "rnoweb", "rhelp", "markdown" },
     doc_width = 58,
     trigger_characters = { " ", ":", "(", '"', "@", "$" },
     fun_data_1 = { "select", "rename", "mutate", "filter" },
