@@ -222,7 +222,7 @@ source.setup = function(opts)
 end
 
 source.get_keyword_pattern = function()
-    return "[`\\._@\\$:_[:digit:][:lower:][:upper:]\\u00FF-\\uFFFF]*"
+    return "[`\\._@\\$:_[:digit:][:lower:][:upper:]]*"
 end
 
 source.get_trigger_characters = function() return options.trigger_characters end
@@ -307,7 +307,7 @@ source.complete = function(_, request, callback)
 
     -- Check if this is Rmd and the cursor is in the chunk header
     if
-        request.context.filetype == "rmd"
+        (request.context.filetype == "rmd" or request.context.filetype  == "markdown")
         and string.find(request.context.cursor_before_line, "^```{r")
     then
         if not chunk_opts then chunk_opts = require("cmp_r.chunk").get_opts() end
@@ -325,7 +325,7 @@ source.complete = function(_, request, callback)
             true
         )
         local lnum = request.context.cursor.row
-        if request.context.filetype == "rmd" or request.context.filetype == "quarto" then
+        if request.context.filetype == "rmd" or request.context.filetype == "quarto" or request.context.filetype == "markdown" then
             isr = false
             for i = lnum, 1, -1 do
                 if string.find(lines[i], "^```{%s*r") then
