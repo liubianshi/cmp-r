@@ -230,11 +230,13 @@ source.get_trigger_characters = function() return options.trigger_characters end
 source.get_debug_name = function() return "cmp_r" end
 
 source.is_available = function()
+    if vim.b.buf_rime_enabled == true then return false end
     for _, v in pairs(options.filetypes) do
         if vim.bo.filetype == v then return true end
     end
     return false
 end
+
 
 source.resolve = function(_, citem, callback)
     cb_rsv = callback
