@@ -296,6 +296,14 @@ source.resolve = function(_, citem, callback)
             kind = cmp.lsp.MarkupKind.Markdown,
         }
         callback(citem)
+    elseif
+        citem.label:find("%$")
+        and (citem.cls == "!" or citem.cls == "%" or citem.cls == "~" or citem.cls == "{")
+    then
+        send_to_nvimcom(
+            "E",
+            "nvimcom:::nvim.get.summary(" .. citem.label .. ", '" .. citem.env .. "')"
+        )
     else
         send_to_nrs("6" .. citem.label .. "\002" .. citem.env .. "\n")
     end
@@ -327,8 +335,8 @@ source.complete = function(_, request, callback)
             true
         )
         local lnum = request.context.cursor.row
+        isr = false
         if request.context.filetype == "rmd" or request.context.filetype == "quarto" or request.context.filetype == "markdown" then
-            isr = false
             for i = lnum, 1, -1 do
                 if string.find(lines[i], "^```{%s*r") then
                     isr = true
@@ -350,7 +358,6 @@ source.complete = function(_, request, callback)
                 end
             end
         elseif request.context.filetype == "rnoweb" then
-            isr = false
             for i = lnum, 1, -1 do
                 if string.find(lines[i], "^%s*<<.*>>=") then
                     isr = true
@@ -360,7 +367,6 @@ source.complete = function(_, request, callback)
                 end
             end
         elseif request.context.filetype == "rhelp" then
-            isr = false
             for i = lnum, 1, -1 do
                 if string.find(lines[i], [[\%S+{]]) then
                     if
@@ -409,19 +415,28 @@ source.complete = function(_, request, callback)
     end
 
     -- check if the cursor is within comment or string
+    local snm = ""
     local c = vim.treesitter.get_captures_at_pos(
         0,
         request.context.cursor.row - 1,
         request.context.cursor.col - 2
     )
-    for _, v in pairs(c) do
-        if v.capture == "string" or v.capture == "comment" then return nil end
+    if #c > 0 then
+        for _, v in pairs(c) do
+            if v.capture == "string" then
+                snm = "rString"
+            elseif v.capture == "comment" then
+                return nil
+            end
+        end
+    else
+        -- We still need to call synIDattr because there is no treesitter parser for rhelp
+        snm = vim.fn.synIDattr(
+            vim.fn.synID(request.context.cursor.row, request.context.cursor.col - 1, 1),
+            "name"
+        )
+        if snm == "rComment" then return nil end
     end
-    local snm = vim.fn.synIDattr(
-        vim.fn.synID(request.context.cursor.row, request.context.cursor.col - 1, 1),
-        "name"
-    )
-    if snm == "rComment" then return nil end
 
     -- required by rnvimserver
     compl_id = compl_id + 1
@@ -519,6 +534,9 @@ end
 ---@param txt string The text almost ready to be displayed.
 source.resolve_cb = function(txt)
     local s = fix_doc(txt)
+    if last_compl_item.def then
+        s = last_compl_item.label .. fix_doc(last_compl_item.def) .. "\n---\n" .. s
+    end
     last_compl_item.documentation = { kind = cmp.lsp.MarkupKind.Markdown, value = s }
     cb_rsv({ items = { last_compl_item } })
 end
@@ -538,6 +556,7 @@ source.complete_cb = function(cid, compl)
             label = lbl,
             env = v.env,
             cls = v.cls,
+            def = v.def or nil,
             kind = kindtbl[v.cls],
             sortText = v.cls == "a" and "0" or "9",
             textEdit = { newText = backtick(lbl), range = ter },
