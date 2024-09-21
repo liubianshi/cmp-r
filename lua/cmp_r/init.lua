@@ -130,7 +130,7 @@ local get_first_obj = function(line, lnum)
                 -- The opening parenthesis is here. Now, get the function and
                 -- its first object (if in the same line)
                 piece = string.sub(line, 1, idx - 1)
-                funname = string.match(piece, ".-([%w%._]+)%s*$")
+                funname = string.match(piece, ".-([%w%$%._]+)%s*$")
                 if funname then pkg = string.match(piece, ".-([%w%._]+)::" .. funname) end
                 piece = string.sub(line, idx + 1)
                 firstobj = string.match(piece, "%s-([%w%.%_]+)")
@@ -241,12 +241,10 @@ end
 source.resolve = function(_, citem, callback)
     cb_rsv = callback
     last_compl_item = citem
-
     if not citem.cls then
         callback(citem)
         return nil
     end
-
     if citem.env == ".GlobalEnv" then
         if citem.cls == "a" then
             callback(citem)
@@ -457,7 +455,6 @@ source.complete = function(_, request, callback)
     -- Should we complete function arguments?
     local nra
     nra = need_R_args(request.context.cursor_before_line, request.context.cursor.row)
-
     if nra.fnm then
         -- We are passing arguments for a function
 
