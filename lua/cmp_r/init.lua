@@ -39,7 +39,8 @@ local options = {
 }
 
 local reset_r_compl = function()
-    for _, v in pairs(cmp.core.sources) do
+    local sources = cmp.core.sources or {}
+    for _, v in pairs(sources) do
         if v.name == "cmp_r" then
             v:reset()
             break
@@ -221,9 +222,7 @@ source.setup = function(opts)
     end
 end
 
-source.get_keyword_pattern = function()
-    return "[`\\._@\\$:_[:digit:][:lower:][:upper:]]*"
-end
+source.get_keyword_pattern = function() return "[`\\._@\\$:_[:digit:][:lower:][:upper:]]*" end
 
 source.get_trigger_characters = function() return options.trigger_characters end
 
@@ -236,7 +235,6 @@ source.is_available = function()
     end
     return false
 end
-
 
 source.resolve = function(_, citem, callback)
     cb_rsv = callback
@@ -315,7 +313,7 @@ source.complete = function(_, request, callback)
 
     -- Check if this is Rmd and the cursor is in the chunk header
     if
-        (request.context.filetype == "rmd" or request.context.filetype  == "markdown")
+        (request.context.filetype == "rmd" or request.context.filetype == "markdown")
         and string.find(request.context.cursor_before_line, "^```{r")
     then
         if not chunk_opts then chunk_opts = require("cmp_r.chunk").get_opts() end
@@ -334,7 +332,11 @@ source.complete = function(_, request, callback)
         )
         local lnum = request.context.cursor.row
         isr = false
-        if request.context.filetype == "rmd" or request.context.filetype == "quarto" or request.context.filetype == "markdown" then
+        if
+            request.context.filetype == "rmd"
+            or request.context.filetype == "quarto"
+            or request.context.filetype == "markdown"
+        then
             for i = lnum, 1, -1 do
                 if string.find(lines[i], "^```{%s*r") then
                     isr = true
